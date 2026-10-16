@@ -471,6 +471,7 @@ static void main (String[] args){
                 IJ.log("FAILED: ${e.cause}")
             }
         }
+      null
     }finally {
         pool.shutdown()
         def now = LocalDateTime.now().format(
