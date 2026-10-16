@@ -19,8 +19,8 @@
 > **Note:** Keep the HTD file and its associated TIFF files in their original directory structure during conversion.
 
 ## Comparison of HCS Image Conversion Results
-![HCS Image Converter dialog](images/Fig2.png) <br>
-**Image courtesy of Dr. Jing-Jer Lin's lab, IBMB, NTU.**
+![HCS Image Converter dialog](images/Fig2.png)<br>
+<p align="center"><strong>Image courtesy of Dr. Jing-Jer Lin's lab, IBMB, NTU.</strong></p>
 
 * **Left (Direct conversion with Bio-Formats):**
   * Incorrectly decoded pixel data
@@ -29,12 +29,12 @@
   * Lost scale calibration
 
 * **Right (Conversion with HCS Image Converter):**
-  * Expected pixel data
+  * Correctly decoded pixel data
   * Correct site numbering (e.g., A01_Site11)
   * Preserved channel colors
   * Accurate scale information
 
 ## Citation
-If you use RetinaLayerGauge in your research, please cite:
+If you use HCS-Image-Converter in your research, please cite:
 Luo, An-Chi. (2026). HCS-Image-Converter v1.0.0. Zenodo. 
 
