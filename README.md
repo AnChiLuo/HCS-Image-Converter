@@ -34,6 +34,12 @@
   * Preserved channel colors
   * Accurate scale information
 
+## Example Dataset
+
+Download the [example CellWorx HTD dataset](https://zenodo.org/records/23468516) to try HCS File Converter.
+
+Extract `DemoDataSet.7z` before use.
+
 ## Citation
 If you use HCS-Image-Converter in your research, please cite:
 Luo, An-Chi. (2026). HCS-Image-Converter v1.0.0. Zenodo. 
