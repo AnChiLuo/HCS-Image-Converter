@@ -1,4 +1,5 @@
 # HCS-Image-Converter
+[![DOI](https://zenodo.org/badge/1421664764.svg)](https://doi.org/10.5281/zenodo.23470264)  
 **HCS-Image-Converter** is an ImageJ tool designed for converting CellWorx HTD-based high-content screen(HCS) image data int OME-Tiff flie.
 ## Features
 - Checks whether the TIFF pixel type is supported before conversion.
