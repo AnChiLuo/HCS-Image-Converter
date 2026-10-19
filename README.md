@@ -43,5 +43,5 @@ Extract `DemoDataSet.7z` before use.
 
 ## Citation
 If you use HCS-Image-Converter in your research, please cite:
-Luo, An-Chi. (2026). HCS-Image-Converter v1.0.0. Zenodo. 
+AnChiLuo. (2026). AnChiLuo/HCS-Image-Converter: HCS Image Converter v1.0.0 (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.23470265
 
