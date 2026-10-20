@@ -1,22 +1,24 @@
 # HCS-Image-Converter
 [![DOI](https://zenodo.org/badge/1421664764.svg)](https://doi.org/10.5281/zenodo.23470264)  
-**HCS-Image-Converter** is an ImageJ tool designed for converting CellWorx HTD-based high-content screen(HCS) image data int OME-Tiff flie.
+**HCS-Image-Converter** is an ImageJ tool designed for converting CellWorx HTD-based high-content screening (HCS) image data into OME-TIFF files.  
+
 ## Features
 - Checks whether the TIFF pixel type is supported before conversion.
 - Reads TIFF metadata directly to recover information that may be missing from the Bio-Formats import, including stage labels and spatial calibration.
 - Supports parallel image conversion with a user-selectable number of worker threads.
 ## Limitations 
 1. Support single-plate HTD files only.
-2. If Z- spacing is missing, this tool estimated  from Z-position difference based using the selected reference channel.This estimate may not be accurate. 
+2. If Z spacing is missing from the OME metadata (e.g., when the HTD file is opened with Bio-Formats), the tool estimates it from the Z-position differences of the selected reference channel. This estimate may not be accurate.
+   
 ## Usage
-1. Open **Fiji** and lunch the Scirpt Editor.
-2. Open the converter Groovy Script and run it.
+1. Open **Fiji**.
+2. Open HCS-Image-Converter.groovy(insrc/main/groovy/org/example) in the Script Editor and click **Run**.
 3. Select the input HTD file and output folder(Fig 1).
-4. choose the processing mode and the metadata reference channel(Fig 1).
+4. Choose the processing mode and the metadata reference channel (Fig 1).
    
    ![HCS Image Converter dialog](images/Fig1.png)<br>
     *Figure 1. HCS Image Converter dialog.*  
-5. Wait for the conversion to finish. The converter creates a folder named `<HTD folder name>_convert` inside the selected output folder and saves one OME-TIFF file per image series.
+6. Wait for the conversion to finish. The converter creates a folder named `<HTD folder name>_convert` inside the selected output folder and saves one OME-TIFF file per image series.
 > **Note:** Keep the HTD file and its associated TIFF files in their original directory structure during conversion.
 
 ## Comparison of HCS Image Conversion Results
@@ -37,7 +39,7 @@
 
 ## Example Dataset
 
-Download the [example CellWorx HTD dataset](https://zenodo.org/records/23468516) to try HCS File Converter.
+Download the [example CellWorx HTD dataset](https://zenodo.org/records/23468516) to try HCS Image Converter.
 
 Extract `DemoDataSet.7z` before use.
 
