@@ -5,11 +5,11 @@ HCS Image Converter
 Converts compatible HTD-based HCS plate data into organized OME-TIFF files
 for downstream analysis.
 
-Version     : 1.0.0
+Version     : 1.1.0
 Author      : An-Chi Luo
 Affiliation : Imaging Core Facility, College of Medicine,
               National Taiwan University
-Date        : 2026-10-16
+Date        : 2026-10-28
 Main file   : Main_ThreadPool.groovy
 
 Main Workflow
@@ -33,6 +33,7 @@ import ij.gui.GenericDialog
 import ij.io.TiffDecoder
 import ij.io.FileInfo
 import ij.gui.NonBlockingGenericDialog
+import loci.formats.FormatException
 import loci.formats.out.OMETiffWriter
 import loci.formats.ImageReader
 import loci.formats.IFormatReader
@@ -43,8 +44,10 @@ import java.awt.AWTEvent
 import java.awt.Choice
 import java.awt.Dimension
 import java.awt.TextField
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.FileStore
 import loci.formats.MetadataTools
 import loci.formats.meta.IMetadata
 import ome.units.UNITS
@@ -134,13 +137,13 @@ static Color getColortype(String channelName){
     if(tempChannelName.contains("dapi")){
         return new Color(0, 0, 255, 255)
     }
-    if(tempChannelName.contains("fitc")){
+    if(tempChannelName.contains("fitc")|| tempChannelName.contains("gfp") || tempChannelName.contains("488")){
         return new Color(0,255,0,255)
     }
-    if(tempChannelName.contains("texas red") || tempChannelName.contains("tritc") || tempChannelName.contains("cy3")  ){
+    if(tempChannelName.contains("texas red") || tempChannelName.contains("tritc") || tempChannelName.contains("cy3") || tempChannelName.contains("561") ){
         return new Color(255,0,0,255)
     }
-    if(tempChannelName.contains("cy5")){
+    if(tempChannelName.contains("cy5") || tempChannelName.contains("647")){
         return new Color(255,0,255,255)
     }
     return null
@@ -181,6 +184,15 @@ static Length normalizedLength(double value, Unit<Length> unit, int decimals) {
     double f = Math.pow(10, decimals)
     return new Length(Math.round(um * f) / f, UNITS.MICROMETER)
 }
+static Long getRequiredSpace(IFormatReader reader){
+    int width = reader.getSizeX()
+    int height = reader.getSizeY()
+    int imageCount = reader.getImageCount()
+    int seriesC =  reader.getSeriesCount()
+    int bytesPerPixel = FormatTools.getBytesPerPixel(reader.getPixelType())
+    long rawBytes = (long) width * height * imageCount * seriesC * bytesPerPixel
+    return (long) Math.ceil(rawBytes * 1.2d)
+}
 
 static void main (String[] args){
     def runtime = Runtime.getRuntime()
@@ -203,8 +215,18 @@ static void main (String[] args){
     String HTDPath
     String outPutPath
     String defaultThread
+
     int refChannelIndex
     while(true){
+        Boolean enoughSpace = null
+        Boolean validateHTD = null
+        Long requiredSpace = null
+        Long usableSpace = null
+        String lastHtdPath = null
+        String currentHtdPath = null
+        String lastOutPut = null
+        String currentOutPut = null
+
         List<String> channelList = []
         NonBlockingGenericDialog askInput = new NonBlockingGenericDialog("HCS Image Converter")
         askInput.addFileField("Input HTD file:", null)
@@ -214,42 +236,160 @@ static void main (String[] args){
 
         TextField htdField = askInput.getStringFields().get(0) as TextField
         Choice refChannel = askInput.getChoices().get(1) as Choice
+        TextField outPutField = askInput.getStringFields().get(1) as TextField
 
         refChannel.setPreferredSize(
                 new Dimension(200, 30)
         )
 
         askInput.addDialogListener (new DialogListener(){boolean dialogItemChanged(GenericDialog dialog, AWTEvent e) {
-            if(e!= null && e.getSource() == htdField ){
-                String htdFilePath = htdField.getText()
-                if(htdFilePath.endsWith(".HTD")){
-                    channelList.clear()
-                    refChannel.removeAll()
-                    new File(htdFilePath).eachLine{line ->
-                        if (line.contains("WaveName")){
-                            channelList.add(line.split(",")[1].replace('"', '').trim())
-                        }
-                    }
-                    channelList.each{it-> refChannel.add(it)}
-                    if(!channelList.isEmpty()){
-                        refChannel.select(0)
+            currentHtdPath = htdField.getText()
+            currentOutPut = outPutField.getText()
+            if(lastHtdPath != currentHtdPath ){
+                lastHtdPath = currentHtdPath
+                validateHTD = false
+                requiredSpace = null
+                enoughSpace = null
+                channelList.clear()
+                refChannel.removeAll()
+                if(lastHtdPath.toUpperCase().endsWith(".HTD") &&
+                        new File(lastHtdPath).isFile()){
+                    try{
+                        IFormatReader inputReader = new ImageReader()
+                        IMetadata inputOmeMData = MetadataTools.createOMEXMLMetadata()
+                        inputReader.setMetadataStore(inputOmeMData)
+                        inputReader.setId(lastHtdPath)
+                        requiredSpace= getRequiredSpace(inputReader)
 
+                        if (usableSpace != null) {
+                            enoughSpace = requiredSpace < usableSpace
+                            if (!enoughSpace) {
+                                IJ.log("The output location may not have enough disk space.")
+                            }
+                        }
+                        new File(lastHtdPath).eachLine{line ->
+                            if (line.contains("WaveName")){
+                                channelList.add(line.split(",")[1].replace('"', '').trim())
+                            }
+                        }
+                        channelList.each{it-> refChannel.add(it)}
+                        if(!channelList.isEmpty()){
+                            refChannel.select(0)
+
+                        }
+                        validateHTD = true
+                        inputReader.close()
+                    }
+                    catch(Exception readerE ){
+                        //IJ.log("Unable to read HTD: ${readerE.message}")
+                        IJ.error("Unable to open HTD dataset",
+                                "Bio-Formats could not initialize the selected HTD file. Please check that the HTD file and its associated image files are accessible.")
                     }
                 }
             }
+            if(currentOutPut != lastOutPut){
+                lastOutPut = currentOutPut
+                enoughSpace =false
+                usableSpace = null
+                File outputDir = new File(lastOutPut)
+                if(!lastOutPut.isEmpty() && outputDir.isDirectory()){
+                    try {
+                        FileStore store = Files.getFileStore(Paths.get(lastOutPut))
+                        usableSpace = store.getUsableSpace()
+                        if (requiredSpace != null) {
+                            enoughSpace = requiredSpace < usableSpace
+                            if (!enoughSpace) {
+                                IJ.log("The output location may not have enough disk space.")
+                            }
+                        }
+
+                    }
+                    catch(Exception storageE){
+                        IJ.log("Unable to estimate available storage space.")
+                    }
+
+                }
+            }
+
+            /*
+            if( e.getSource() == htdField){
+                validateHTD = false
+                String htdFilePath = htdField.getText()
+                if(htdFilePath.endsWith(".HTD")){
+                    try{
+                        IFormatReader inputReader = new ImageReader()
+                        IMetadata inputOmeMData = MetadataTools.createOMEXMLMetadata()
+                        inputReader.setMetadataStore(inputOmeMData)
+                        inputReader.setId(htdFilePath)
+                        requiredSpace= getRequiredSpace(inputReader)
+
+                        if (usableSpace != null) {
+                            enoughSpace = requiredSpace < usableSpace
+                            if (!enoughSpace) {
+                                IJ.log("The output location may not have enough disk space.")
+                            }
+                        }
+
+                        channelList.clear()
+                        refChannel.removeAll()
+                        new File(htdFilePath).eachLine{line ->
+                            if (line.contains("WaveName")){
+                                channelList.add(line.split(",")[1].replace('"', '').trim())
+                            }
+                        }
+
+                        channelList.each{it-> refChannel.add(it)}
+                        if(!channelList.isEmpty()){
+                            refChannel.select(0)
+
+                        }
+                        validateHTD = true
+                        inputReader.close()
+                    }
+                    catch(Exception readerE ){
+                        //IJ.log("Unable to read HTD: ${readerE.message}")
+                        IJ.error("Unable to open HTD dataset",
+                                "Bio-Formats could not initialize the selected HTD file. Please check that the HTD file and its associated image files are accessible.")
+                    }
+                }
+
+            }
+            if(e!= null && e.getSource() ==outPutField){
+                enoughSpace = false
+                String outPutFilePath = outPutField.getText()
+                if(outPutFilePath != null){
+                    try {
+                        FileStore store = Files.getFileStore(Paths.get(outPutFilePath))
+                        usableSpace = store.getUsableSpace()
+                        if (requiredSpace != null) {
+                            enoughSpace = requiredSpace < usableSpace
+                            if (!enoughSpace) {
+                                IJ.log("The output location may not have enough disk space.")
+                            }
+                        }
+
+                    }
+                    catch(Exception storageE){
+                        IJ.log("Unable to estimate available storage space.")
+                    }
+                }
+            }
+            */
             return true}})
+
         askInput.showDialog()
-        HTDPath = askInput.getNextString()
-        outPutPath = askInput.getNextString()
-        defaultThread = askInput.getNextChoice()
-        refChannelIndex = channelList.indexOf(askInput.getNextChoice()) + 1
         if (askInput.wasCanceled()) {
             IJ.log("The process was terminated early by the user.")
             return
         }
 
-        if(HTDPath == null || !HTDPath.endsWith(".HTD")){
-            IJ.showMessage("Error" , "Invalid file formate.")
+        HTDPath = askInput.getNextString()
+        outPutPath = askInput.getNextString()
+        defaultThread = askInput.getNextChoice()
+        refChannelIndex = channelList.indexOf(askInput.getNextChoice()) + 1
+
+        if(!validateHTD){
+            IJ.showMessage("Error" , "Invalid file format.")
             continue
         }
 
@@ -257,11 +397,19 @@ static void main (String[] args){
             IJ.showMessage("Error" , "Please select a folder to save results.")
             continue
         }
+
+        if(!enoughSpace ){
+            IJ.showMessage("Error" , "The output location may not have enough disk space.")
+            continue
+        }
+
         else{
             break
         }
+
     }
 
+    return
     File HTDParentPath = new File(HTDPath)
     String HTDParentFileName = HTDParentPath.getParentFile().getName()
     File outPutFile = new File(outPutPath, HTDParentFileName + "_convert")
@@ -466,14 +614,20 @@ static void main (String[] args){
         IJ.log("Starting to convert images at ${start} ====")
         futures.each{future->
             try {
-                println "Result: ${future.get()}"
+                if(!future.get().isEmpty()){
+                    println "Result: ${future.get()}"
+                }
             } catch (ExecutionException e) {
                 IJ.log("FAILED: ${e.cause}")
             }
         }
-      null
+        null
     }finally {
         pool.shutdown()
+        topReader.close()
+        readerPool.each{ reader->
+            reader.close()
+        }
         def now = LocalDateTime.now().format(
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         IJ.log( "==== ALL DONE at ${now} ====")
