@@ -5,7 +5,7 @@ HCS Image Converter
 Converts compatible HTD-based HCS plate data into organized OME-TIFF files
 for downstream analysis.
 
-Version     : 1.1.1
+Version     : 1.1.0
 Author      : An-Chi Luo
 Affiliation : Imaging Core Facility, College of Medicine,
               National Taiwan University
@@ -310,71 +310,6 @@ static void main (String[] args){
 
                 }
             }
-
-            /*
-            if( e.getSource() == htdField){
-                validateHTD = false
-                String htdFilePath = htdField.getText()
-                if(htdFilePath.endsWith(".HTD")){
-                    try{
-                        IFormatReader inputReader = new ImageReader()
-                        IMetadata inputOmeMData = MetadataTools.createOMEXMLMetadata()
-                        inputReader.setMetadataStore(inputOmeMData)
-                        inputReader.setId(htdFilePath)
-                        requiredSpace= getRequiredSpace(inputReader)
-
-                        if (usableSpace != null) {
-                            enoughSpace = requiredSpace < usableSpace
-                            if (!enoughSpace) {
-                                IJ.log("The output location may not have enough disk space.")
-                            }
-                        }
-
-                        channelList.clear()
-                        refChannel.removeAll()
-                        new File(htdFilePath).eachLine{line ->
-                            if (line.contains("WaveName")){
-                                channelList.add(line.split(",")[1].replace('"', '').trim())
-                            }
-                        }
-
-                        channelList.each{it-> refChannel.add(it)}
-                        if(!channelList.isEmpty()){
-                            refChannel.select(0)
-
-                        }
-                        validateHTD = true
-                        inputReader.close()
-                    }
-                    catch(Exception readerE ){
-                        //IJ.log("Unable to read HTD: ${readerE.message}")
-                        IJ.error("Unable to open HTD dataset",
-                                "Bio-Formats could not initialize the selected HTD file. Please check that the HTD file and its associated image files are accessible.")
-                    }
-                }
-
-            }
-            if(e!= null && e.getSource() ==outPutField){
-                enoughSpace = false
-                String outPutFilePath = outPutField.getText()
-                if(outPutFilePath != null){
-                    try {
-                        FileStore store = Files.getFileStore(Paths.get(outPutFilePath))
-                        usableSpace = store.getUsableSpace()
-                        if (requiredSpace != null) {
-                            enoughSpace = requiredSpace < usableSpace
-                            if (!enoughSpace) {
-                                IJ.log("The output location may not have enough disk space.")
-                            }
-                        }
-
-                    }
-                    catch(Exception storageE){
-                        IJ.log("Unable to estimate available storage space.")
-                    }
-                }
-            }
-            */
             return true}})
 
         askInput.showDialog()
@@ -408,7 +343,7 @@ static void main (String[] args){
         }
 
     }
-    
+
     File HTDParentPath = new File(HTDPath)
     String HTDParentFileName = HTDParentPath.getParentFile().getName()
     File outPutFile = new File(outPutPath, HTDParentFileName + "_convert")
