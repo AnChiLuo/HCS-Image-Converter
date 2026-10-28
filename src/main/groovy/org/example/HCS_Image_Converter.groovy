@@ -5,7 +5,7 @@ HCS Image Converter
 Converts compatible HTD-based HCS plate data into organized OME-TIFF files
 for downstream analysis.
 
-Version     : 1.1.0
+Version     : 1.1.1
 Author      : An-Chi Luo
 Affiliation : Imaging Core Facility, College of Medicine,
               National Taiwan University
